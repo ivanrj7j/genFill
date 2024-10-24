@@ -5,7 +5,20 @@ import torch
 import os
 
 class HolePredictorDataset(Dataset):
-    def __init__(self, path:str, downScaleFactor:int, resolution:tuple[int, int], minHoleSize:float = 5e-3, maxHoleSize:float = 2.5e-2) -> None:
+    """
+    # HolePredictorDataset
+
+    This loads the dataset for predicting holes in image. This makes holes in the image and gives the labels for the regions in which the holes are present
+    """
+    def __init__(self, path:str, downScaleFactor:int, resolution:tuple[int, int]) -> None:
+        """
+        Initializes the HolePredictorDataset
+
+        Parameters:
+        path (str): Path to the dataset folder
+        downScaleFactor (int): Downscale factor for the images
+        resolution (tuple[int, int]): Desired resolution for the images
+        """
         super().__init__()
 
         self.path = path
@@ -19,10 +32,13 @@ class HolePredictorDataset(Dataset):
             Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
         ])
 
-        self.minHoleSize = minHoleSize
-        self.maxHoleSize = maxHoleSize
-
     def getHoles(self, image:torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        """
+        Add random holes to the image.
+
+        Parameters:
+        image (torch.Tensor): Input image tensor
+        """
         values = torch.tensor([0, 1], dtype=torch.float32)
         probablities = torch.tensor([0.2, 0.8])
         indices = torch.multinomial(probablities, torch.prod(torch.tensor(self.downscleResolution)), replacement=True)
