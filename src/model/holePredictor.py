@@ -6,7 +6,19 @@ from src.blocks.res import ResBlock
 from src.blocks.downscale import DownScaleBlock
 
 class HolePredictorModel(nn.Module):
+    """
+    # HolePredictorModel
+
+    This model predicts divides the image into smaller chunks and checks if there is a hole in the image
+    """
     def __init__(self, downScaleFactor:int, resNets:int, *args, **kwargs) -> None:
+        """
+        Initializes the HolePredictorModel with given downscale factor and number of resnets.
+
+        Parameters:
+        downScaleFactor (int): Downscale factor of the image
+        resNets (int): Number of ResBlock layers to be used in the model
+        """
         super().__init__(*args, **kwargs)
 
         downBlocks = []
@@ -28,6 +40,12 @@ class HolePredictorModel(nn.Module):
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, x:torch.Tensor):
+        """
+        Performs a forward pass through the HolePredictorModel.
+
+        Parameters:
+        x (torch.Tensor): Input tensor with shape (batch_size, inChannels, height, width).
+        """
         x = self.downscalers(x)
         x = self.resBlocks(x)
         x = self.finalConv(x)
