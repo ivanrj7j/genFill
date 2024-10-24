@@ -36,7 +36,7 @@ class HolePredictorModel(nn.Module):
 
         self.resBlocks = nn.Sequential(*resBlocks)
 
-        self.finalConv = nn.Conv2d(outChannels, 3, 3, 1, 1)
+        self.finalConv = nn.Conv2d(outChannels, 1, 3, 1, 1)
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, x:torch.Tensor):
