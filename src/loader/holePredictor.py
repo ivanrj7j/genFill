@@ -67,4 +67,13 @@ class HolePredictorDataset(Dataset):
         image = Image.open(imagePath)
         image = self.transform(image) 
 
-        return self.getHoles(image) 
+        return self.getHoles(image)
+
+
+def getDataLoader(path:str, downScaleFactor:int, resolution:tuple[int, int], noiseProbablity:float=0.2, additionalNoiseIntensity:float=2e-1, batchSize:int=32, numWorkers:int=1):
+    """
+    Returns a DataLoader for the HolePredictorDataset
+    """
+
+    dataset = HolePredictorDataset(path, downScaleFactor, resolution, noiseProbablity, additionalNoiseIntensity)
+    return DataLoader(dataset, batch_size=batchSize, shuffle=True, num_workers=numWorkers)
