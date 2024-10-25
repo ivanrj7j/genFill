@@ -76,4 +76,4 @@ def getDataLoader(path:str, downScaleFactor:int, resolution:tuple[int, int], noi
     """
 
     dataset = HolePredictorDataset(path, downScaleFactor, resolution, noiseProbablity, additionalNoiseIntensity)
-    return DataLoader(dataset, batch_size=batchSize, shuffle=True, num_workers=numWorkers)
+    return DataLoader(dataset, batch_size=batchSize, shuffle=True)
