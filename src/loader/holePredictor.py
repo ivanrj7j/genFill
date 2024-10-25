@@ -10,7 +10,7 @@ class HolePredictorDataset(Dataset):
 
     This loads the dataset for predicting holes in image. This makes holes in the image and gives the labels for the regions in which the holes are present
     """
-    def __init__(self, path:str, downScaleFactor:int, resolution:tuple[int, int]) -> None:
+    def __init__(self, path:str, downScaleFactor:int, resolution:tuple[int, int], noiseProbablity:float=0.2, additionalNoiseIntensity:float=2e-1) -> None:
         """
         Initializes the HolePredictorDataset
 
@@ -18,6 +18,8 @@ class HolePredictorDataset(Dataset):
         path (str): Path to the dataset folder
         downScaleFactor (int): Downscale factor for the images
         resolution (tuple[int, int]): Desired resolution for the images
+        noiseProbablity (float): Probability of adding noise to the a certain block in the image, a hole of noise is created. Defaults to 0.2
+        additionalNoiseIntensity (float): Additional intensity of noise to be added, in the non-hole parts of the images. Defaults to 5e-3
         """
         super().__init__()
 
@@ -32,6 +34,9 @@ class HolePredictorDataset(Dataset):
             Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
         ])
 
+        self.noiseProbablity = noiseProbablity
+        self.additionalNoiseIntensity = additionalNoiseIntensity
+
     def getHoles(self, image:torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """
         Add random holes to the image.
@@ -40,13 +45,18 @@ class HolePredictorDataset(Dataset):
         image (torch.Tensor): Input image tensor
         """
         values = torch.tensor([0, 1], dtype=torch.float32)
-        probablities = torch.tensor([0.2, 0.8])
+        probablities = torch.tensor([1-self.noiseProbablity, self.noiseProbablity])
         indices = torch.multinomial(probablities, torch.prod(torch.tensor(self.downscleResolution)), replacement=True)
         y = values[indices].reshape(self.downscleResolution)
+        # deciding where to put the holes 
 
         multiplicator = y.repeat_interleave(self.factor, 1).repeat_interleave(self.factor, 0)
+        multiplicator = multiplicator + (((torch.rand_like(multiplicator)*2) -1)*self.additionalNoiseIntensity)
+        noise = (torch.rand_like(image) * 2) - 1
+        noise *= multiplicator
+        # adding random noise 
         
-        return image * multiplicator, y.unsqueeze(0)
+        return (image + noise)/2, y.unsqueeze(0)
 
     def __len__(self) -> int:
         return len(self.images)
