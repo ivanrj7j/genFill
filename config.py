@@ -21,5 +21,8 @@ savePath = f"saves/{uuid4()}"
 saveEvery = 11
 # saving settings 
 
-if not os.path.exists(savePath):
+training = True
+# if the model is currently training or not 
+
+if not os.path.exists(savePath) and training:
     os.makedirs(savePath)
