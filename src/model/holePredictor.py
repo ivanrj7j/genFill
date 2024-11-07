@@ -51,3 +51,14 @@ class HolePredictorModel(nn.Module):
         x = self.finalConv(x)
         x = self.sigmoid(x)
         return x
+    
+    def hiddenOutput(self, x:torch.Tensor):
+        """
+        Returns the hidden output of the HolePredictorModel.
+
+        Parameters:
+        x (torch.Tensor): Input tensor with shape (batch_size, inChannels, height, width).
+        """
+        x = self.downscalers(x)
+        x = self.resBlocks(x)
+        return x
