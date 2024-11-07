@@ -51,5 +51,5 @@ class FillerDataLoader(DataLoader):
 
         for x, y in modelOut:
             x, y = x.to(self.device), y.to(self.device)
-            modelPredictions = self.holePredictorModel.hiddenOutput(x)
+            modelPredictions = self.holePredictorModel.forward(x)
             yield (x, modelPredictions), y
