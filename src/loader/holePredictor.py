@@ -10,7 +10,7 @@ class HolePredictorDataset(Dataset):
 
     This loads the dataset for predicting holes in image. This makes holes in the image and gives the labels for the regions in which the holes are present
     """
-    def __init__(self, path:str, downScaleFactor:int, resolution:tuple[int, int], noiseProbablity:float=0.2, additionalNoiseIntensity:float=2e-1) -> None:
+    def __init__(self, path:str, downScaleFactor:int, resolution:tuple[int, int], noiseProbablity:float=0.2, additionalNoiseIntensity:float=2e-1, noiseIntensity:float=1.0) -> None:
         """
         Initializes the HolePredictorDataset
 
@@ -20,6 +20,7 @@ class HolePredictorDataset(Dataset):
         resolution (tuple[int, int]): Desired resolution for the images
         noiseProbablity (float): Probability of adding noise to the a certain block in the image, a hole of noise is created. Defaults to 0.2
         additionalNoiseIntensity (float): Additional intensity of noise to be added, in the non-hole parts of the images. Defaults to 5e-3
+        noiseIntensity (float): Intensity of noise to be added in the holes. Defaults to 1.0. Can be any real number 1 for simple averaging.
         """
         super().__init__()
 
@@ -36,6 +37,7 @@ class HolePredictorDataset(Dataset):
 
         self.noiseProbablity = noiseProbablity
         self.additionalNoiseIntensity = additionalNoiseIntensity
+        self.noiseIntensity = noiseIntensity
 
     def getHoles(self, image:torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """
@@ -44,7 +46,7 @@ class HolePredictorDataset(Dataset):
         Parameters:
         image (torch.Tensor): Input image tensor
         """
-        values = torch.tensor([0, 1], dtype=torch.float32)
+        values = torch.tensor([0, self.noiseIntensity], dtype=torch.float32)
         probablities = torch.tensor([1-self.noiseProbablity, self.noiseProbablity])
         indices = torch.multinomial(probablities, torch.prod(torch.tensor(self.downscleResolution)), replacement=True)
         y = values[indices].reshape(self.downscleResolution)

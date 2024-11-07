@@ -14,7 +14,7 @@ class  FillerDataset(HolePredictorDataset):
 
     This loads the dataset for filling the holes in image. This makes holes in the image feeds the data to filler model. The dataset provides, original image (in the desired resolution) and image with the holes.
     """
-    def __init__(self, path: str, downScaleFactor: int, resolution: tuple[int, int], noiseProbablity: float = 0.2, additionalNoiseIntensity: float = 0.2) -> None:
+    def __init__(self, path: str, downScaleFactor: int, resolution: tuple[int, int], noiseProbablity: float = 0.2, additionalNoiseIntensity: float = 0.2, noiseIntensity:float=1) -> None:
         """
         Initializes the FillerDataset
 
@@ -24,9 +24,10 @@ class  FillerDataset(HolePredictorDataset):
         resolution (tuple[int, int]): Desired resolution for the images
         noiseProbablity (float): Probability of adding noise to the a certain block in the image, a hole of noise is created. Defaults to 0.2
         additionalNoiseIntensity (float): Additional intensity of noise to be added, in the non-hole parts of the images. Defaults to 5e-3
+        noiseIntensity (float): Intensity of noise to be added in the holes. Defaults to 1.0. Can be any real number 1 for simple averaging.
         """
 
-        super().__init__(path, downScaleFactor, resolution, noiseProbablity, additionalNoiseIntensity)
+        super().__init__(path, downScaleFactor, resolution, noiseProbablity, additionalNoiseIntensity, noiseIntensity)
 
     def __getitem__(self, idx: int) -> tuple[Tensor, Tensor]:
         imagePath = os.path.join(self.path, self.images[idx])
@@ -40,7 +41,7 @@ class  FillerDataset(HolePredictorDataset):
     
 
 class FillerDataLoader(DataLoader):
-    def __init__(self, dataset: FillerDataset, holePredictorModel:HolePredictorModel, device:str, batch_size: int | None = 1, shuffle: bool | None = None, num_workers: int = 0, **kwargs):
+    def __init__(self, dataset: FillerDataset, holePredictorModel:HolePredictorModel, device:str, batch_size: int | None = 1, shuffle: bool | None = True, num_workers: int = 0, **kwargs):
         super().__init__(dataset=dataset, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers, **kwargs)
         
         self.holePredictorModel = holePredictorModel
