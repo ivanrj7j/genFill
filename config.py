@@ -21,8 +21,10 @@ savePath = f"saves/{uuid4()}"
 saveEvery = 11
 # saving settings 
 
-training = True
+training = False
 # if the model is currently training or not 
+
+holePredictorModeSave = "saves/cad8b0be-b647-4fa9-8a0a-f15bf5bbb69f/model_final.pth"
 
 if not os.path.exists(savePath) and training:
     os.makedirs(savePath)
