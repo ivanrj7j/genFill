@@ -4,6 +4,7 @@ import os
 epochs = 4
 batchSize = 32
 lr = 1e-4
+betas = (0.5, 0.999)
 # general training hyperparameter
 
 resolution = (128, 128)
