@@ -4,24 +4,24 @@ import os
 trainingID = str(uuid4())
 
 epochs = 150
-batchSize = 32
+batchSize = 16
 lr = 1e-4
 betas = (0.5, 0.999)
 # general training hyperparameter
 
 resolution = (128, 128)
 downScaleFactor = 4
+resNets = 12
 trainPath = "data/train"
 testPath = "data/test"
 numWorkers = 1
 # hole prediction dataloader specific 
 
-resNets = 2
 device = "cuda"
 # model specific parameters
 
 savePath = os.path.join("saves", trainingID)
-saveEvery = 10
+saveEvery = 5
 # saving settings 
 
 training = True
@@ -32,6 +32,12 @@ holePredictorModeSave = "saves/cad8b0be-b647-4fa9-8a0a-f15bf5bbb69f/model_final.
 
 ouputPreviewPath = os.path.join("imagePreviews", trainingID)
 # specifying where the output previews are saved
+
+fillerLoadPath = "saves/ff609a92-03e4-458e-85ce-374979d221d2/model_filler_25.pth"
+discriminatorLoadPath = "saves/ff609a92-03e4-458e-85ce-374979d221d2/model_discriminator_25.pth"
+
+
+decayEvery = 2
 
 if not os.path.exists(savePath) and training:
     os.mkdir(savePath)

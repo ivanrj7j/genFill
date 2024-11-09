@@ -2,8 +2,6 @@ import config
 # importing config files 
 
 from src.model.holePredictor import HolePredictorModel
-from src.model.filler import FillerModel
-from src.model.discriminator import Discriminator
 # importing models 
 
 from src.loader.filler import FillerDataLoader, FillerDataset
@@ -14,14 +12,13 @@ import src.losses as losses
 
 import torch
 from torch.optim.adam import Adam
+from torch.optim.lr_scheduler import ExponentialLR
 from tqdm import tqdm
-from src.trainers.utils import saveModel, saveImage
-from torch import autocast, GradScaler
+from src.trainers.utils import saveModel, saveImage, loadModels
 # importing other stuff
 
 holePredictor = HolePredictorModel(4, 2).to(config.device)
-filler = FillerModel(4, 12).to(config.device)
-discriminator = Discriminator(4, 12).to(config.device)
+filler, discriminator = loadModels(config.fillerLoadPath, config.discriminatorLoadPath, config.downScaleFactor, config.resNets, config.device)
 # initializing models 
 
 holePredictorWeights = torch.load(config.holePredictorModeSave, weights_only=True)
@@ -40,35 +37,31 @@ fillerOptimizer = Adam(filler.parameters(), config.lr, config.betas)
 discriminatorOptimizer = Adam(discriminator.parameters(), config.lr, config.betas)
 # initializing optimizers 
 
-scaler = GradScaler(config.device)
-# initalizing the scaler 
+
+fillerDecay = ExponentialLR(fillerOptimizer, 0.999)
+discriminatorDecay = ExponentialLR(discriminatorOptimizer, 0.98)
 
 def optimize(holedImage:torch.Tensor, holePredictions:torch.Tensor, targetImage:torch.Tensor) -> tuple[float, float]:
+    generatorOutput = filler.forward(holedImage, holePredictions)
 
-    with autocast(config.device, torch.float16):
-        generatorOutput = filler.forward(holedImage, holePredictions)
+    discReal = discriminator.forward(holedImage, targetImage)
+    discFake = discriminator.forward(holedImage, generatorOutput.detach())
 
-        discReal = discriminator.forward(holedImage, targetImage)
-        discFake = discriminator.forward(holedImage, generatorOutput.detach())
-
-        discLoss = losses.discriminatorLoss(discReal, discFake)
+    discLoss = losses.discriminatorLoss(discReal, discFake)
 
     discriminator.zero_grad()
     discriminatorOptimizer.zero_grad()
-    scaler.scale(discLoss).backward()
-    scaler.step(discriminatorOptimizer)
-    scaler.update()
+    discLoss.backward()
+    discriminatorOptimizer.step()
     # training the discriminator 
 
-    with autocast(config.device, torch.float16):
-        adversarialLoss = discriminator.forward(holedImage, generatorOutput)
-        fillerLoss = losses.generatorLoss(adversarialLoss)
+    adversarialLoss = discriminator.forward(holedImage, generatorOutput)
+    fillerLoss = losses.generatorLoss(adversarialLoss)
 
     filler.zero_grad()
     fillerOptimizer.zero_grad()
-    scaler.scale(fillerLoss).backward()
-    scaler.step(fillerOptimizer)
-    scaler.update()
+    fillerLoss.backward()
+    fillerOptimizer.step()
     # training the filler
 
     return fillerLoss.item(), discLoss.item()
@@ -95,7 +88,7 @@ def train():
             discriminatorLossTotal += discriminatorLoss / config.batchSize
             # calculating loss 
             
-            batch.set_postfix({"FILLER LOSS":fillerLossTotal, "DISCRIMINATOR LOSS":discriminatorLossTotal,  "BATCH":i+1})
+            batch.set_postfix({"fillerLoss":fillerLossTotal, "discLoss":discriminatorLossTotal, "fillerLR":fillerOptimizer.param_groups[0]["lr"], "discLR": discriminatorOptimizer.param_groups[0]["lr"]})
 
         if epoch % config.saveEvery == 0:
             saveModel(filler, config.savePath, f"filler_{epoch}")
@@ -112,6 +105,11 @@ def train():
                 prediction = filler.forward(x, holePredictions)
                 saveImage(prediction, config.ouputPreviewPath, epoch)
             break
+
+        if epoch % config.decayEvery == 0:
+            fillerDecay.step()
+            discriminatorDecay.step()
+            # decaying learning rate
 
     saveModel(filler, config.savePath, "filler_final")
     saveModel(discriminator, config.savePath, "discriminator_final")
