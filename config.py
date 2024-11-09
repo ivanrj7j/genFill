@@ -3,7 +3,7 @@ import os
 
 trainingID = str(uuid4())
 
-epochs = 4
+epochs = 150
 batchSize = 32
 lr = 1e-4
 betas = (0.5, 0.999)
@@ -21,10 +21,10 @@ device = "cuda"
 # model specific parameters
 
 savePath = os.path.join("saves", trainingID)
-saveEvery = 11
+saveEvery = 10
 # saving settings 
 
-training = False
+training = True
 # if the model is currently training or not 
 
 holePredictorModeSave = "saves/cad8b0be-b647-4fa9-8a0a-f15bf5bbb69f/model_final.pth"

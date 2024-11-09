@@ -14,6 +14,6 @@ def saveImage(image:torch.Tensor, path:str, epoch:int|str):
     Save the image to the given path.
     """
     image = (image + 1) / 2
-    imagePath = os.path.join(path, f"preview_{epoch}.")
+    imagePath = os.path.join(path, f"preview_{epoch}.png")
 
     save_image(image, imagePath)

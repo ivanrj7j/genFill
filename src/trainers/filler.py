@@ -16,11 +16,12 @@ import torch
 from torch.optim.adam import Adam
 from tqdm import tqdm
 from src.trainers.utils import saveModel, saveImage
+from torch import autocast, GradScaler
 # importing other stuff
 
 holePredictor = HolePredictorModel(4, 2).to(config.device)
-filler = FillerModel(4, 8).to(config.device)
-discriminator = Discriminator(4, 8).to(config.device)
+filler = FillerModel(4, 12).to(config.device)
+discriminator = Discriminator(4, 12).to(config.device)
 # initializing models 
 
 holePredictorWeights = torch.load(config.holePredictorModeSave, weights_only=True)
@@ -39,8 +40,39 @@ fillerOptimizer = Adam(filler.parameters(), config.lr, config.betas)
 discriminatorOptimizer = Adam(discriminator.parameters(), config.lr, config.betas)
 # initializing optimizers 
 
+scaler = GradScaler(config.device)
+# initalizing the scaler 
+
 def optimize(holedImage:torch.Tensor, holePredictions:torch.Tensor, targetImage:torch.Tensor) -> tuple[float, float]:
-    pass
+
+    with autocast(config.device, torch.float16):
+        generatorOutput = filler.forward(holedImage, holePredictions)
+
+        discReal = discriminator.forward(holedImage, targetImage)
+        discFake = discriminator.forward(holedImage, generatorOutput.detach())
+
+        discLoss = losses.discriminatorLoss(discReal, discFake)
+
+    discriminator.zero_grad()
+    discriminatorOptimizer.zero_grad()
+    scaler.scale(discLoss).backward()
+    scaler.step(discriminatorOptimizer)
+    scaler.update()
+    # training the discriminator 
+
+    with autocast(config.device, torch.float16):
+        adversarialLoss = discriminator.forward(holedImage, generatorOutput)
+        fillerLoss = losses.generatorLoss(adversarialLoss)
+
+    filler.zero_grad()
+    fillerOptimizer.zero_grad()
+    scaler.scale(fillerLoss).backward()
+    scaler.step(fillerOptimizer)
+    scaler.update()
+    # training the filler
+
+    return fillerLoss.item(), discLoss.item()
+    # returning loss
 
 def train():
     if not config.training:
@@ -67,7 +99,7 @@ def train():
 
         if epoch % config.saveEvery == 0:
             saveModel(filler, config.savePath, f"filler_{epoch}")
-            saveModel(discriminator, config.savePath, f"filler_{epoch}")
+            saveModel(discriminator, config.savePath, f"discriminator_{epoch}")
 
         for (x, holePredictions), y in fillerDataloaderTest:
             with torch.no_grad():
@@ -80,4 +112,6 @@ def train():
                 prediction = filler.forward(x, holePredictions)
                 saveImage(prediction, config.ouputPreviewPath, epoch)
             break
-        
+
+    saveModel(filler, config.savePath, "filler_final")
+    saveModel(discriminator, config.savePath, "discriminator_final")
