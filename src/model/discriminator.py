@@ -21,4 +21,7 @@ class Discriminator(HolePredictorModel):
 
     def forward(self, x: Tensor, y: Tensor):
         inp = torch.cat((x, y), 1)
-        return super().forward(inp)
+        
+        inp = self.downscalers.forward(inp)
+        inp = self.resBlocks.forward(inp)
+        return self.finalConv.forward(inp)
